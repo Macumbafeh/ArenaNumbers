@@ -14,6 +14,20 @@ local function ANDefaults()
     print(AN_TEXT .. " Settings reset to default.")
 end
 
+local function ResetNameplates()
+    local plates = WorldFrame:GetNumChildren()
+    for i = 1, plates do
+        local plate = select(i, WorldFrame:GetChildren())
+        local _, region = plate:GetRegions()
+        if region and region:GetObjectType() == "Texture" and region:GetTexture() == "Interface\\Tooltips\\Nameplate-Border" then
+            local _, _, _, _, _, _, name = plate:GetRegions()
+            if name then
+                -- Reset to original name if available, otherwise use target name
+                name:SetText(UnitName("target"))
+            end
+        end
+    end
+end
 
 local function AddElements(plate, time)
     local _, border, _, _, _, _, name, levelText = plate:GetRegions()
@@ -23,11 +37,13 @@ local function AddElements(plate, time)
 	
         local _, type = IsInInstance()
         if ArenaNumbers and type == "arena" then
-            for i = 1, GetNumArenaOpponents() do
+            for i = 1, 5 do --[[GetNumArenaOpponents()]]
                 local text = name:GetText()
-                if UnitName("arena" .. i) == text then
-                    name:SetText(i) 
+				local arenaName = UnitName("arena" .. i)
+				 if arenaName and text == arenaName then
+                    name:SetText(i)
                 end
+				
                 local nr = tonumber(text)
                 if nr then
                     name:SetText(nr)
@@ -43,17 +59,25 @@ local function AddElements(plate, time)
     end
 end
 
+
+
 local function onUpdate(self, elapsed)
-    local plates = WorldFrame:GetNumChildren()
+	local _, type = IsInInstance()
+    
+    if type == "arena" then
+		local plates = WorldFrame:GetNumChildren()
 
-    time = time + elapsed
+		time = time + elapsed
 
-    for i = 1, plates do
-        local plate = select(i, WorldFrame:GetChildren())
-        local _, region = plate:GetRegions()
-        if region and region:GetObjectType() == "Texture" and region:GetTexture() == "Interface\\Tooltips\\Nameplate-Border" then
-            AddElements(plate, time)
-        end
+		for i = 1, plates do
+			local plate = select(i, WorldFrame:GetChildren())
+			local _, region = plate:GetRegions()
+			if region and region:GetObjectType() == "Texture" and region:GetTexture() == "Interface\\Tooltips\\Nameplate-Border" then
+				AddElements(plate, time)
+			end
+		end
+	else
+        ResetNameplates()
     end
 end
 
@@ -97,6 +121,7 @@ end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
 frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 frame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
         OnAddonLoaded(...)
